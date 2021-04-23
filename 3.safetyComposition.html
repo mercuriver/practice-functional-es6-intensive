@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>안전한 합성</title>
+    <script src="./fx.js"></script>
+  </head>
+  <body>
+    <!-- 
+    ## 안전한 합성에 대해 
+    -->
+
+    <!-- 
+    1. map으로 합성하기 
+    -->
+    <script>
+      const f = (x) => x + 10;
+      const g = (x) => x - 5;
+      const fg = (x) => f(g(x));
+      console.log(fg(), fg(10)); // (NaN, 15)
+
+      _.go(10, fg, console.log); // 15
+      _.go(undefined, fg, console.log); // NaN
+      _.go([], fg, console.log); // 5
+      _.go([10], L.map(fg), _.each(console.log)); //monad 형태
+      _.go([], L.map(fg), _.each(console.log)); // 아무 실행 결과도 반환하지 않음
+
+      console.clear();
+    </script>
+
+    <!-- 
+    2. find 대신 L.filter 써보기 
+    -->
+    <script>
+      const users = [
+        { name: 'AA', age: 35 },
+        // { name: 'BB', age: 26 },
+        { name: 'CC', age: 28 },
+        { name: 'CC', age: 34 },
+        { name: 'EE', age: 23 },
+      ];
+    </script>
+
+    <script>
+      try {
+        const user = _.find((u) => u.name == 'BB', users);
+        console.log(user.age);
+      } catch (e) {}
+
+      _.each(
+        console.log,
+        L.map(
+          (u) => u.age,
+          L.take(
+            1,
+            L.filter((u) => u.name == 'BB', users)
+          )
+        )
+      );
+
+      // _.find와 시간 복잡도가 동일함
+      _.go(
+        users,
+        L.filter((u) => u.name == 'BB'),
+        L.take(1),
+        L.map((u) => u.age),
+        _.each(console.log)
+      );
+    </script>
+  </body>
+</html>
