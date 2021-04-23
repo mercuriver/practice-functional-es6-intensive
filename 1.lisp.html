@@ -7,35 +7,206 @@
   </head>
   <body>
     <!-- 
-# 함수형 프로그래밍과 JavaScript ES6+ 응용편
+    # 함수형 프로그래밍과 JavaScript ES6+ 응용편
 
-## 이터러블 프로그래밍 혹은 리스트 프로세싱 (Lisp)
+    ## 이터러블 프로그래밍 혹은 리스트 프로세싱 (Lisp)
 
-1. 홀수 n개 더하기 
--->
-
-    <script></script>
-
-    <!-- 
-2. if를 filter로
-3. 값 변화 후 변수 할당을 map으로
-4. break를 take로
-5. 축약 및 합산을 reduce로 
--->
-
-    <script></script>
-
-    <!-- 
-6. while을 range로
-7. 효과를 each로 구분 
--->
-
-    <script></script>
+    1. 홀수 n개 더하기 
+    -->
+    <script>
+      function f1(limit, list) {
+        let acc = 0;
+        for (const a of list) {
+          if (a % 2) {
+            const b = a * a;
+            acc += b;
+            console.log(a);
+            if (--limit == 0) break;
+          }
+        }
+        console.log(acc);
+      }
+      // f1(3, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+    </script>
 
     <!-- 
-8. 추억의 별 그리기, 구구단 
--->
+    2. if를 filter로
+    -->
+    <script>
+      function f2(limit, list) {
+        let acc = 0;
+        for (const a of L.filter((a) => a % 2, list)) {
+          const b = a * a;
+          acc += b;
+          if (--limit == 0) break;
+        }
+        console.log(acc);
+      }
+      // f2(3, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+    </script>
 
-    <script></script>
+    <!--
+    3. 값 변화 후 변수 할당을 map으로
+    -->
+    <script>
+      function f3(limit, list) {
+        let acc = 0;
+        for (const a of L.map(
+          (a) => a * a,
+          L.filter((a) => a % 2, list)
+        )) {
+          acc += a;
+          if (--limit == 0) break;
+        }
+        console.log(acc);
+      }
+      // f3(3, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+    </script>
+
+    <!--
+    4. break를 take로
+    -->
+    <script>
+      function f4(limit, list) {
+        let acc = 0;
+        for (const a of L.take(
+          limit,
+          L.map(
+            (a) => a * a,
+            L.filter((a) => a % 2, list)
+          )
+        )) {
+          acc += a;
+        }
+        console.log(acc);
+      }
+      // f4(3, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+    </script>
+
+    <!--
+    5. 축약 및 합산을 reduce로 
+    -->
+    <script>
+      const add = (a, b) => a + b;
+      function f5(limit, list) {
+        console.log(
+          _.reduce(
+            add,
+            L.take(
+              limit,
+              L.map(
+                (a) => a * a,
+                L.filter((a) => a % 2, list)
+              )
+            )
+          )
+        );
+      }
+      // f5(3, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+    </script>
+
+    <!-- 
+    + go를 통해 보다 표현력을 강화
+    -->
+    <script>
+      function f6(limit, list) {
+        _.go(
+          list,
+          L.filter((a) => a % 2),
+          L.map((a) => a * a),
+          L.take(limit),
+          _.reduce(add),
+          console.log
+        );
+      }
+      // f5(3, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+    </script>
+
+    <!-- 
+    6. while을 range로
+    -->
+    <script>
+      function ff1(end) {
+        let i = 0;
+        while (i < end) {
+          console.log(i);
+          ++i;
+        }
+      }
+      // ff1(10);
+
+      function ff2(end) {
+        _.each(console.log, L.range(end));
+      }
+      // ff2(10);
+
+      function ff3(start, end) {
+        let i = start;
+        while (i < end) {
+          console.log(i);
+          i += 2;
+        }
+      }
+      // ff3(1, 10);
+
+      function ff4(start, end) {
+        _.each(console.log, L.range(start, end, 2));
+      }
+      // ff4(1, 10);
+    </script>
+
+    <!-- 
+    7. 효과를 each로 구분 
+    -->
+    <script>
+      // 함수형 프로그래밍에서는 each를 통해 특정 효과의 의도를 명시적으로 나타내는 것이 컨벤션
+      function ff5(start, end) {
+        // _.go(_.range(start, end, 2), console.log);
+        _.go(L.range(start, end, 2), _.each(console.log));
+      }
+      // ff5(1, 10);
+    </script>
+
+    <!-- 
+    8. 추억의 별 그리기, 구구단 
+    -->
+    <script>
+      const join = (sep) => _.reduce((a, b) => `${a}${sep}${b}`);
+
+      _.go(
+        _.range(1, 6),
+        _.map(_.range),
+        _.map(_.map((_) => '*')),
+        _.map(join('')),
+        join('\n')
+        // , console.log
+      );
+
+      // _.go(
+      //   _.range(1, 6),
+      //   _.map((s) =>
+      //     _.go(
+      //       _.range(s),
+      //       _.map((_) => '*'),
+      //       join('')
+      //     )
+      //   ),
+      //   join('\n'),
+      //   console.log
+      // );
+
+      _.go(
+        L.range(2, 10),
+        L.map((a) =>
+          _.go(
+            L.range(1, 10),
+            L.map((b) => `${a}x${b}=${a * b}`),
+            join('\n')
+          )
+        ),
+        join('\n\n'),
+        console.log
+      );
+    </script>
   </body>
 </html>
