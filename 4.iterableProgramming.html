@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>이터러블로 객체 다루기</title>
+    <script src="./fx.js"></script>
+  </head>
+  <body>
+    <!-- 
+    ## 객체를 이터러블 프로그래밍으로 다루기 
+    -->
+
+    <script>
+      const obj1 = {
+        a: 1,
+        b: 2,
+        c: 3,
+        d: 4,
+      };
+    </script>
+
+    <!-- 
+    1. values 
+    -->
+    <script>
+      console.log(Object.values(obj1));
+
+      L.values = function* (obj) {
+        for (const k in obj) {
+          console.log(k);
+          yield obj[k];
+        }
+      };
+
+      var it = L.values(obj1);
+      // it = L.take(2, it);
+      console.log([...it]);
+
+      _.go(
+        obj1,
+        Object.values,
+        _.map((a) => a + 10),
+        _.reduce((a, b) => a + b),
+        console.log
+      );
+
+      _.go(
+        obj1,
+        L.values,
+        L.map((a) => a + 10),
+        L.take(2),
+        _.reduce((a, b) => a + b),
+        console.log
+      );
+      console.clear();
+    </script>
+
+    <!-- 
+    2. entries 
+    -->
+    <script>
+      L.entries = function* (obj) {
+        for (const k in obj) {
+          yield [k, obj[k]];
+        }
+      };
+
+      var it2 = L.entries(obj1);
+      // it2 = L.take(2, it2);
+      console.log([...it2]);
+
+      _.go(
+        obj1,
+        L.entries,
+        L.filter(([_, v]) => v % 2),
+        L.map(([k, v]) => ({ [k]: v })),
+        _.reduce(Object.assign),
+        console.log
+      );
+      console.clear();
+    </script>
+
+    <!-- 
+    3. keys 
+    -->
+    <script>
+      L.keys = function* (obj) {
+        for (const k in obj) {
+          yield k;
+        }
+      };
+
+      _.go(obj1, L.keys, _.each(console.log));
+      console.clear();
+    </script>
+
+    <!-- 
+    4. 어떠한 값이든 이터러블 프로그래밍으로 다루기 
+      - 이터러블로 이터러블 프로그래밍 
+      - 객체를 제너레이터를 이용해서 이터레이터로 만들어서 이터러블 프로그래밍 
+      - 어떤 제너레이터든 이터레이터로 만들어서 이터러블 프로그래밍 
+    -->
+    <script>
+      const g1 = function* (stop) {
+        let i = -1;
+        while (++i < stop) {
+          console.log('---- generator');
+          yield 10;
+          if (false) yield 20 + 30;
+          yield 20;
+        }
+      };
+
+      console.log([...g1(10)]);
+      console.log([...L.take(3, g1(3))]);
+      _.each(console.log, g1(10));
+      console.clear();
+    </script>
+
+    <!-- 
+    5. object 
+    -->
+    <script>
+      const a = [
+        ['a', 1],
+        ['b', 2],
+        ['c', 3],
+      ];
+      const b = { a: 1, b: 2, c: 3 };
+
+      // const object = (entries) =>
+      //   _.go(
+      //     entries,
+      //     L.map(([k, v]) => ({ [k]: v })),
+      //     _.reduce(Object.assign)
+      //   );
+      const object = (entries) =>
+        _.reduce((obj, [k, v]) => ((obj[k] = v), obj), {}, entries);
+
+      console.log(object(a));
+      console.log(object(L.entries({ B: 2, C: 3 })));
+
+      let m = new Map();
+      m.set('a', 10);
+      m.set('b', 20);
+      m.set('c', 30); // Map은 JSON.stringify 불가능
+
+      console.log(object(m)); // object로 변환하면 Symbol.iterable이 존재하므로 JSON.stringify 가능
+      console.log(JSON.stringify(object(m)));
+
+      console.clear();
+    </script>
+
+    <!-- 
+    6. mapObject 
+    -->
+    <script>
+      const mapObject = (f, obj) =>
+        _.go(
+          obj,
+          L.entries,
+          _.map(([k, v]) => [k, f(v)]),
+          object
+        );
+
+      console.log(mapObject((a) => a + 10, { a: 1, b: 2, C: 3 }));
+      console.clear();
+    </script>
+
+    <!-- 
+    7. pick 
+    -->
+    <script>
+      const obj2 = { a: 1, b: 2, c: 3, d: 4, e: 5 };
+      const pick = (ks, obj) =>
+        _.go(
+          ks,
+          _.map((k) => [k, obj[k]]),
+          _.reject(([k, v]) => v === undefined),
+          object
+        );
+      // const pick = (ks, obj) => object(_.map((k) => [k, obj[k]], ks));
+
+      console.log(pick(['b', 'c', 'f'], obj2));
+      console.clear();
+    </script>
+
+    <!-- 
+    8. indexBy 
+    -->
+    <script>
+      const users = [
+        { id: 5, name: 'AA', age: 35 },
+        { id: 10, name: 'BB', age: 26 },
+        { id: 19, name: 'CC', age: 28 },
+        { id: 23, name: 'DD', age: 34 },
+        { id: 24, name: 'EE', age: 23 },
+      ];
+
+      const indexBy = (f, iter) =>
+        _.reduce((obj, a) => ((obj[f(a)] = a), obj), {}, iter);
+
+      console.log(indexBy((u) => u.id, users));
+    </script>
+
+    <!-- 
+    9. indexBy 된 값을 filter 하기 
+    -->
+    <script>
+      const users2 = indexBy((u) => u.id, users);
+      console.log(_.filter(({ age }) => age > 30, users));
+      console.log(_.filter(({ age }) => age > 30, users2)); // key&value이며 iterable이 아니어서 filter 불가능
+
+      _.go(
+        users2,
+        L.entries,
+        L.filter(([_, { age }]) => age < 30), // key, value destructuring을 통해 사용
+        // L.take(2),
+        object,
+        console.log
+      );
+    </script>
+  </body>
+</html>
