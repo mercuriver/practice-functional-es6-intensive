@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>이터러블 다루기 - 시간</title>
+    <script src="./fx.js"></script>
+  </head>
+  <body>
+    <!-- 
+    ## 시간을 이터러블로 다루기 - 이터러블의 실행 시점을 제어하는 프로그래밍
+    -->
+
+    <!-- 
+    1. range와 take의 재해석 
+    -->
+
+    <!-- <script>
+      _.go(
+        _.range(10), // 0 부터 9까지의 배열 [즉시 평가]
+        _.take(3), // 앞에서부터 3개만 자르기 [즉시 평가]
+        _.each(console.log)
+      );
+      _.go(
+        L.range(1, 10), // 0 부터 9까지의 이터러블, 최대 10번 일어날 일
+        L.take(3), // 최대 3개의 값을 필요하고, 최대 3번의 일을 필요시 수행
+        _.each(console.log)
+      );
+
+      _.go(
+        L.range(Infinity),
+        L.map(_.delay(1000)),
+        L.filter((a) => a % 2),
+        L.map((_) => new Date()),
+        L.take(5),
+        _.each(console.log)
+      );
+
+      _.go(
+        L.range(Infinity),
+        L.map(_.delay(1000)),
+        L.filter((a) => a % 2),
+        L.map((_) => new Date()),
+        _.take(5), // 즉시 평가 take를 사용 할 경우, 위 모든 처리가 끝날때까지 지연이 생김
+        _.each(console.log)
+      );
+    </script> -->
+
+    <!-- 
+    2. takeWhile, takeUntil 
+    -->
+    <script>
+      _.go(
+        [1, 2, 3, 4, 5, 6, 7, 8, 0, 1, 2],
+        _.takeWhile((a) => a), // false 조건을 만나면 종료, 만족하는 조건부터 생략
+        _.each(console.log)
+      );
+
+      _.go(
+        [1, 2, 3, 4, 5, 6, 7, 8, 0, 1, 2],
+        // _.takeWhile((a) => a),
+        _.takeUntil((a) => !a), // true 조건이 나올때까지 반복, 만족하는 조건까지 출력
+        _.each(console.log)
+      );
+
+      _.go(
+        [0, false, undefined, null, 10, 20, 30],
+        _.takeUntil((a) => a),
+        _.each(console.log)
+      );
+      console.clear();
+    </script>
+
+    <!-- 
+    3. 할 일들을 이터러블(리스트)로 바라보기 
+    -->
+    <!-- <script>
+      const track = [
+        { cars: ['철수', '영희', '철희', '영수'] },
+        { cars: ['하든', '커리', '듀란트', '탐슨'] },
+        { cars: ['폴', '어빙', '릴라드', '맥컬럼'] },
+        { cars: ['스파이더맨', '아이언맨'] },
+        { cars: [] },
+      ];
+
+      _.go(
+        // L.range(trackl.length)
+        L.range(Infinity),
+        L.map((i) => track[i]),
+        L.map(_.delay(1000)),
+        // L.takeWhile(({ cars }) => cars.length == 4),
+        // L.takeWhile(({ cars: { length: l } }) => l == 4),
+        L.map(({ cars }) => cars),
+        // L.takeWhile(({ length: l }) => l == 4),
+        L.takeUntil(({ length: l }) => l < 4),
+        // L.take(2),
+        L.flat,
+        L.map((car) => `${car} 출발!`),
+        _.each(console.log)
+      );
+    </script> -->
+
+    <!-- 
+    4. 아임포트 결제 누락 스케쥴러 만들기 (실무: iamport API 연동)
+    -->
+    <script>
+      const Impt = {
+        payments: {
+          1: [
+            { imp_id: 11, order_id: 1, amount: 15000 },
+            { imp_id: 12, order_id: 2, amount: 25000 },
+            { imp_id: 13, order_id: 3, amount: 10000 },
+          ],
+          2: [
+            { imp_id: 14, order_id: 4, amount: 25000 },
+            { imp_id: 15, order_id: 5, amount: 45000 },
+            { imp_id: 16, order_id: 6, amount: 15000 },
+          ],
+          3: [
+            { imp_id: 17, order_id: 7, amount: 20000 },
+            { imp_id: 18, order_id: 8, amount: 30000 },
+          ],
+          4: [],
+          5: [],
+          //...
+        },
+        getPayments: (page) => {
+          console.log(`http://..?page=${page}`);
+          return _.delay(1000 * 2, Impt.payments[page]);
+        },
+        cancelPayment: (imp_id) => Promise.resolve(`${imp_id}: 취소완료`),
+      };
+
+      const DB = {
+        getOrders: (ids) => _.delay(100, [{ id: 1 }, { id: 3 }, { id: 7 }]),
+      };
+
+      async function job() {
+        // 결제된 결제모듈측 payments 가져온다.
+        // 결제 데이터가 있을 때까지 (최대 3건) 모두 가져와서 하나로 합친 page단위로 가져온다.
+        const payments = await _.go(
+          L.range(1, Infinity),
+          L.map(Impt.getPayments),
+          // L.take(2),
+          L.takeUntil(({ length }) => length < 3),
+          _.flat
+        );
+        // console.log(payments);
+
+        // 결제가 실제로 완료된 가맹점 측 주문서 id 추출
+        const order_ids = await _.go(
+          payments,
+          _.map((p) => p.order_id),
+          DB.getOrders,
+          _.map(({ id }) => id)
+        );
+        // console.log(order_ids);
+
+        // 결제 모듈의 payments와 가맹점의 주문서를 비교
+        // 결제를 취소해야할 id 추출
+        // 결제 취소 api 요청
+        await _.go(
+          payments,
+          L.reject((p) => order_ids.includes(p.order_id)),
+          L.map((p) => p.imp_id),
+          L.map(Impt.cancelPayment),
+          _.each(console.log)
+        );
+      }
+
+      // job();
+
+      // 5초에 한번 실행
+      // 만일 job이 5초보다 길 경우, job이 끝나는 시점까지 대기 후 실행
+      (function recur() {
+        Promise.all([_.delay(5000, undefined), job()]).then(recur);
+        // job().then(recur);
+      })();
+
+      // 함수형의 매력
+      // 에러를 줄이고 쉽게 복잡한 코드를 구현
+      // 의도가 코드로 명확하기 보임 (단순 함수의 조합)
+      // 순수 함수로 구성되어 함수의 값 안정이 보장되어 있음
+    </script>
+  </body>
+</html>
