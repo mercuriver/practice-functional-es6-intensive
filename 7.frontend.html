@@ -664,6 +664,17 @@
         </div>
         `;
 
+        C.takeAllWithLimit = _.curry((limit, iter) => {
+          let r = L.range(Infinity);
+          return _.go(
+            iter,
+            _.groupBy((_) => Math.floor(r.next().value / limit)),
+            L.values,
+            L.map(L.map((f) => f())),
+            L.map(C.takeAll)
+          );
+        });
+
         Images.loader = (limit) =>
           _.tap(
             $.findAll('img'),
@@ -675,41 +686,10 @@
                 img.src = img.getAttribute('lazy-src');
               })
             ),
-            (lazy) => {
-              let r = L.range(Infinity);
-              return _.go(
-                lazy,
-                _.groupBy((_) => Math.floor(r.next().value / limit)),
-                L.values,
-                L.map(L.map((f) => f())),
-                L.map(C.takeAll),
-                _.each(_.each($.addClass('fade-in')))
-              );
-            }
+            C.takeAllWithLimit(limit),
+            _.each(_.each($.addClass('fade-in')))
           );
 
-        // _.go(
-        //   Images.fetch(),
-        //   Images.tmpl,
-        //   $.el,
-        //   $.append($.qs('body')),
-        //   // (el) => $.qsa('.image', el),
-        //   $.findAll('.remove'),
-        //   // _.each((el) =>
-        //   //   el.addEventListener('click', (e) =>
-        //   //     _.go(
-        //   //       e.currentTarget,
-        //   //       // (el) => el.closest('.image'),
-        //   //       $.closest('.image'),
-        //   //       $.remove
-        //   //     )
-        //   //   )
-        //   // ),
-        //   $.on('click', (e) =>
-        //     _.go(e.currentTarget, $.closest('.image'), $.remove)
-        //   )
-        // );
-        // =>
         _.go(
           Images.fetch(),
           Images.tmpl,
@@ -730,10 +710,14 @@
       3. 경고창 만들기 
       -->
       <!-- 
+      4. 
         - confirm 
         - Promise 활용 
         - alert 
         - 중복 제거 
+      -->
+      <!--
+      5. 이미지 동시성 다루기 
       -->
       <script>
         const Ui = {};
@@ -799,11 +783,6 @@
           },
         ]);
       </script>
-
-      <!--
-      5. 이미지 동시성 다루기 
-      -->
-      <script></script>
 
       <!--
       6. 페이지 띄우기 
