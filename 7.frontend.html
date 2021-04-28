@@ -693,15 +693,25 @@
           $.append($.qs('body')),
           _.tap(
             $.findAll('img'),
-            L.map(
-              (img) =>
-                new Promise((resolve) => {
-                  img.onload = () => resolve(img);
-                  img.src = img.getAttribute('lazy-src');
-                })
+            L.map((img) => (
+              _ // (_) => 한번 더 사용하여, Promise 객체가 아닌 Promise를 반환하는 함수로 반환되도록 유도하는 코드
+            ) =>
+              new Promise((resolve) => {
+                img.onload = () => resolve(img);
+                img.src = img.getAttribute('lazy-src');
+              })
             ),
-            // C.takeAll, // takeAll안하면 이미지 하나씩 즉각적으로 노출
-            _.each($.addClass('fade-in'))
+            (lazy) => {
+              let r = L.range(Infinity);
+              return _.go(
+                lazy,
+                _.groupBy((_) => Math.floor(r.next().value / 4)),
+                L.values,
+                L.map(L.map((f) => f())),
+                L.map(C.takeAll),
+                _.each(_.each($.addClass('fade-in')))
+              );
+            }
           ),
           $.findAll('.remove'),
           $.on(
@@ -785,8 +795,6 @@
             value: true,
           },
         ]);
-
-        Ui.alert('삭제 하시겠습니까?');
       </script>
 
       <!--
