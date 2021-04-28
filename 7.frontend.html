@@ -705,66 +705,76 @@
       -->
       <!-- 
         - confirm 
+        - Promise 활용 
+        - alert 
+        - 중복 제거 
       -->
       <script>
         const Ui = {};
 
-        Ui.confirm = (msg) =>
-          new Promise((resolve) =>
-            _.go(
-              `
+        Ui.message = _.curry(
+          (btns, msg) =>
+            new Promise((resolve) =>
+              _.go(
+                `
               <div class="confirm">
                 <div class="body">
                   <div class="msg">${msg}</div>
                   <div class="buttons">
-                    <button type="button" class="cancel">취소</button>
-                    <button type="button" class="ok">확인</button>
+                    ${_.strMap(
+                      (btn) => `
+                      <button type="button" class="${btn.type}">${btn.name}</button>
+                      `,
+                      btns
+                    )}
                   </div>
                 </div>
               </div>
               `,
-              $.el,
-              $.append($.qs('body')),
-              _.tap(
-                $.find('.ok'),
-                $.on('click', (e) =>
-                  _.go(e.currentTarget, $.closest('.confirm'), $.remove, (_) =>
-                    resolve(true)
-                  )
-                )
-              ),
-              _.tap(
-                $.find('.cancel'),
-                $.on('click', (e) =>
-                  _.go(e.currentTarget, $.closest('.confirm'), $.remove, (_) =>
-                    resolve(false)
-                  )
+                $.el,
+                $.append($.qs('body')),
+                ..._.map(
+                  (btn) =>
+                    _.tap(
+                      $.find(`.${btn.type}`),
+                      $.on('click', (e) =>
+                        _.go(
+                          e.currentTarget,
+                          $.closest('.confirm'),
+                          $.remove,
+                          (_) => resolve(btn.value)
+                        )
+                      )
+                    ),
+                  btns
                 )
               )
             )
-          );
+        );
 
-        // async function f() {
-        //   await Ui.confirm('정말 삭제하시겠습니까?');
-        //   console.log('check');
-        // }
-        // f();
+        Ui.confirm = Ui.message([
+          {
+            name: '취소',
+            type: 'cancel',
+            value: false,
+          },
+          {
+            name: '확인',
+            type: 'ok',
+            value: true,
+          },
+        ]);
+
+        Ui.alert = Ui.message([
+          {
+            name: '확인',
+            type: 'ok',
+            value: true,
+          },
+        ]);
+
+        Ui.alert('삭제 하시겠습니까?');
       </script>
-
-      <!--
-        - Promise 활용 
-      -->
-      <script></script>
-
-      <!--
-        - alert 
-      -->
-      <script></script>
-
-      <!--
-        - 중복 제거 
-      -->
-      <script></script>
 
       <!--
       5. 이미지 동시성 다루기 
