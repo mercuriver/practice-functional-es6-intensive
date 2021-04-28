@@ -664,6 +664,30 @@
         </div>
         `;
 
+        Images.loader = (limit) =>
+          _.tap(
+            $.findAll('img'),
+            L.map((img) => (
+              _ // (_) => 한번 더 사용하여, Promise 객체가 아닌 Promise를 반환하는 함수로 반환되도록 유도하는 코드
+            ) =>
+              new Promise((resolve) => {
+                img.onload = () => resolve(img);
+                img.src = img.getAttribute('lazy-src');
+              })
+            ),
+            (lazy) => {
+              let r = L.range(Infinity);
+              return _.go(
+                lazy,
+                _.groupBy((_) => Math.floor(r.next().value / limit)),
+                L.values,
+                L.map(L.map((f) => f())),
+                L.map(C.takeAll),
+                _.each(_.each($.addClass('fade-in')))
+              );
+            }
+          );
+
         // _.go(
         //   Images.fetch(),
         //   Images.tmpl,
@@ -691,28 +715,7 @@
           Images.tmpl,
           $.el,
           $.append($.qs('body')),
-          _.tap(
-            $.findAll('img'),
-            L.map((img) => (
-              _ // (_) => 한번 더 사용하여, Promise 객체가 아닌 Promise를 반환하는 함수로 반환되도록 유도하는 코드
-            ) =>
-              new Promise((resolve) => {
-                img.onload = () => resolve(img);
-                img.src = img.getAttribute('lazy-src');
-              })
-            ),
-            (lazy) => {
-              let r = L.range(Infinity);
-              return _.go(
-                lazy,
-                _.groupBy((_) => Math.floor(r.next().value / 4)),
-                L.values,
-                L.map(L.map((f) => f())),
-                L.map(C.takeAll),
-                _.each(_.each($.addClass('fade-in')))
-              );
-            }
-          ),
+          Images.loader(4),
           $.findAll('.remove'),
           $.on(
             'click',
